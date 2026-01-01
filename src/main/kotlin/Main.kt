@@ -13,5 +13,4 @@ fun main() {
         }.toString()
         PropertyHandler.setProperty("device", deviceIdx)
     }
-
 }
