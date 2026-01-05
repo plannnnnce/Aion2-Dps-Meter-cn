@@ -1,5 +1,8 @@
 package com.tbread
 
+import java.util.UUID
+import kotlin.uuid.Uuid
+
 class ParsedDamagePacket {
         private var actorId = 0
         private var targetId = 0
@@ -13,6 +16,7 @@ class ParsedDamagePacket {
         private var loop = 0
         private var skipValues = mutableListOf<Int>()
         private val timestamp = System.currentTimeMillis()
+        private val id = UUID.randomUUID()
 
         fun setActorId(actorInfo:StreamProcessor.VarIntOutput){
                 this.actorId = actorInfo.value
@@ -83,6 +87,12 @@ class ParsedDamagePacket {
         }
         fun getType():Int{
                 return this.type
+        }
+        fun getTimeStamp(): Long {
+                return this.timestamp
+        }
+        fun getUuid():UUID{
+                return this.id
         }
 
 

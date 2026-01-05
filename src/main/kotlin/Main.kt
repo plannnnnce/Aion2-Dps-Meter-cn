@@ -33,6 +33,10 @@ fun main() = runBlocking {
     val assembler = StreamAssembler(processor)
     val capturer = PcapCapturer(config, channel)
 
+    Runtime.getRuntime().addShutdownHook(Thread {
+        dataStorage.printDamageByActor()
+    })
+
     launch(Dispatchers.Default) {
         for (chunk in channel) {
             assembler.processChunk(chunk)
