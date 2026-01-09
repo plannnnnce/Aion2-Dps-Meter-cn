@@ -421,6 +421,36 @@
       elBossName.textContent = "루드라";
       testTick();
       setInterval(testTick, POLL_MS);
+
+
+      /*
+      JS 브릿지 마우스 드래그 이벤트 추가
+       */
+
+      let isDragging = false;
+      let startX, startY;
+      let initialStageX, initialStageY;
+
+      document.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.screenX;
+        startY = e.screenY;
+        initialStageX = window.screenX;
+        initialStageY = window.screenY;
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging && window.javaBridge) {
+          const deltaX = e.screenX - startX;
+          const deltaY = e.screenY - startY;
+          window.javaBridge.moveWindow(initialStageX + deltaX, initialStageY + deltaY);
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+
     </script>
   </body>
 </html>
