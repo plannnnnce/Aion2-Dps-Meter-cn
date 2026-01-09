@@ -45,7 +45,7 @@ class DataStorage {
             println("공격자: $nickname")
             actorSet.forEach { p ->
                 val targetMap = HashMap<Int, ParsedDamagePacket>()
-                println("피격자: ${p.getTargetId()}, 스킬: ${p.getSkillCode1()},${p.getSkillCode2()}, 데미지: ${p.getDamage()}")
+                println("피격자: ${p.getTargetId()}, 스킬: ${p.getSkillCode1()},${p.getSkillType()}, 데미지: ${p.getDamage()}")
             }
             val time =
                 ((actorSet.last().getTimeStamp() - actorSet.first().getTimeStamp()) / 1000).takeIf { it != 0L } ?: 1
@@ -57,7 +57,7 @@ class DataStorage {
         byTargetStorage.forEach { (targetId, targetSet) ->
             println("피격자: $targetId")
             targetSet.forEach { p ->
-                println("공격자: ${nicknameStorage[p.getActorId()]}, 스킬: ${p.getSkillCode1()},${p.getSkillCode2()}, 데미지: ${p.getDamage()}")
+                println("공격자: ${nicknameStorage[p.getActorId()]}, 스킬: ${p.getSkillCode1()},${p.getSkillType()}, 데미지: ${p.getDamage()}")
             }
         }
     }

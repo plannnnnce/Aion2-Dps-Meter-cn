@@ -9,7 +9,7 @@ class ParsedDamagePacket {
         private var flag = 0
         private var damage = 0
         private var skillCode = 0
-        private var skillCode2 = 0
+        private var skillType = 0
         private var type = 0
         private var unknown = 0
         private var switchVariable = 0
@@ -30,11 +30,11 @@ class ParsedDamagePacket {
         fun setDamage(damageInfo: StreamProcessor.VarIntOutput){
                 this.damage = damageInfo.value
         }
-        fun setSkillCode(skillCodeInfo: StreamProcessor.VarIntOutput){
-                this.skillCode = skillCodeInfo.value
+        fun setSkillCode(skillCode:Int){
+                this.skillCode = skillCode
         }
-        fun setSkillCode2(skillCode2Info: StreamProcessor.VarIntOutput){
-                this.skillCode2 = skillCode2Info.value
+        fun setSkillType(skillType:Int){
+                this.skillType = skillType
         }
         fun setUnknown(unknownInfo: StreamProcessor.VarIntOutput){
                 this.unknown = unknownInfo.value
@@ -68,8 +68,8 @@ class ParsedDamagePacket {
                 return this.skillCode
         }
 
-        fun getSkillCode2():Int{
-                return this.skillCode2
+        fun getSkillType():Int{
+                return this.skillType
         }
 
         fun getTargetId():Int{

@@ -167,12 +167,14 @@ class StreamProcessor(private val dataStorage: DataStorage) {
 
         val temp = offset
 
-        val skillInfo = readVarInt(packet, offset)
-        pdp.setSkillCode(skillInfo)
-        offset += skillInfo.length
+        val skillCode = parseUInt16le(packet, offset)
+        pdp.setSkillCode(skillCode)
+        offset += 2
 
-        val skillInfo2 = readVarInt(packet, offset)
-        pdp.setSkillCode2(skillInfo2)
+        val skillType = parseUInt16le(packet, offset)
+        pdp.setSkillType(skillType)
+        // 다음연계기가 있을경우 168,조건기 170? 절단2타와 올려치기 모두 174로 동일 유린/검난/결박 172
+        // 발목격파가 171, 연계기 174 예상 파기
         offset = temp + 5
 
         val typeInfo = readVarInt(packet, offset)
@@ -216,7 +218,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         }
 
 //        println(
-//            "피격자: ${pdp.getTargetId()} 공격자: ${pdp.getActorId()} 스위치용변수: ${pdp.getSwitchVariable()} 스킬: ${pdp.getSkillCode1()} 스킬2: ${pdp.getSkillCode2()}" +
+//            "피격자: ${pdp.getTargetId()} 공격자: ${pdp.getActorId()} 스위치용변수: ${pdp.getSwitchVariable()} 스킬: ${pdp.getSkillCode1()} 스킬2: ${pdp.getSkillType()}" +
 //                    " 플래그: ${pdp.getFlag()} 타입: ${pdp.getType()}" +
 //                    " unknown : ${pdp.getUnknown()} 데미지: ${pdp.getDamage()} loop: ${pdp.getLoop()}"
 //        )
