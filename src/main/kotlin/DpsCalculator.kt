@@ -2,8 +2,6 @@ package com.tbread
 
 import com.tbread.entity.DpsData
 import com.tbread.entity.TargetInfo
-import java.util.HashMap
-import java.util.UUID
 
 class DpsCalculator(private val dataStorage: DataStorage) {
 
@@ -50,6 +48,9 @@ class DpsCalculator(private val dataStorage: DataStorage) {
         pdpMap[currentTarget]!!.forEach lastPdpLoop@{ pdp ->
             val nickname = nicknameData[pdp.getActorId()] ?: return@lastPdpLoop
             dpsData.map.merge(nickname, pdp.getDamage(), Int::plus)
+        }
+        dpsData.map.forEach { (name,damage) ->
+            dpsData.map[name] = (damage/(battleTime/1000L)).toInt()
         }
         return dpsData
     }
