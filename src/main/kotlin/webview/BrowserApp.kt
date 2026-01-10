@@ -14,6 +14,8 @@ import javafx.scene.web.WebView
 import javafx.stage.Stage
 import javafx.stage.StageStyle
 import javafx.util.Duration
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 import netscape.javascript.JSObject
 import kotlin.system.exitProcess
 
@@ -79,8 +81,8 @@ class BrowserApp(private val dpsCalculator: DpsCalculator) : Application() {
         }
     }
 
-    fun getDpsData(): DpsData {
-        return dpsData
+    fun getDpsData(): String {
+        return Json.encodeToString(dpsData.map)
     }
 
     fun isDebuggingMode(): Boolean {
