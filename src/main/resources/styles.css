@@ -111,7 +111,7 @@
     transform-origin: left center;
     transform: scaleX(0);
 
-    transition: transform 250ms ease;
+    transition: transform 150ms ease;
   }
 
   .content {

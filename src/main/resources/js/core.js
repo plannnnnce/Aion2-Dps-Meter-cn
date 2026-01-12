@@ -6,7 +6,7 @@ class DpsApp {
       return DpsApp.instance;
     }
 
-    this.POLL_MS = 250;
+    this.POLL_MS = 200;
     this.USER_NAME = "승찬";
     this.lastJson = null;
     this.isCollapse = false;
@@ -195,6 +195,13 @@ class DpsApp {
     });
   }
   callDebugWindow() {
+    if (!window.dpsData) {
+      setTimeout(() => this.callDebugWindow(), 100);
+      return;
+    }
+
+    const consoleDiv = document.querySelector(".console");
+
     if (window.dpsData.isDebuggingMode()) {
       consoleDiv.style.display = "block";
       const originalLog = console.log;
