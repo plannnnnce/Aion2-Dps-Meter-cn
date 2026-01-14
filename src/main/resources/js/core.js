@@ -74,12 +74,13 @@ class DpsApp {
     this.lastJson = raw;
 
     const { rows, targetName } = this.buildRowsFromPayload(raw);
-   
-    if (rows.length > 0) {
-      this.lastNonEmptyRows = rows;
-    } else if (this.lastNonEmptyRows) {
-      rows = this.lastNonEmptyRows;
-    }
+
+   //UI 초기화 안되는 버그 있어서 주석처리 
+    // if (rows.length > 0) {
+    //   this.lastNonEmptyRows = rows;
+    // } else if (this.lastNonEmptyRows) {
+    //   rows = this.lastNonEmptyRows;
+    // }
 
     this.elBossName.textContent = targetName;
 
@@ -178,6 +179,12 @@ class DpsApp {
     });
 
     this.resetBtn?.addEventListener("click", () => {
+      this.detailsUI?.close?.();
+      this.meterUI?.onResetMeterUi?.();
+
+      this.lastJson = null;
+      this.elBossName.textContent = "DPS METER";
+
       window.javaBridge?.resetDps?.();
     });
   }

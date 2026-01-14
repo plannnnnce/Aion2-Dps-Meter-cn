@@ -161,7 +161,7 @@ const createMeterUI = ({ elList, dpsFormatter, getUserName, onClickUserRow }) =>
 
     lastVisibleIds = nextVisibleIds;
 
-    pruneCache(nextVisibleIds, now);
+    pruneCache(nextVisibleIds);
   };
 
   const updateFromJson = (jsonStr) => {
@@ -175,6 +175,11 @@ const createMeterUI = ({ elList, dpsFormatter, getUserName, onClickUserRow }) =>
     arr.sort((a, b) => (Number(b?.dps) || 0) - (Number(a?.dps) || 0));
     renderRows(getDisplayRows(arr));
   };
-
-  return { updateFromJson, updateFromRows };
+  const onResetMeterUi = () => {
+    elList.classList.remove("hasRows");
+    lastVisibleIds = new Set();
+    elList.replaceChildren();
+    rowViewById.clear();
+  };
+  return { updateFromJson, updateFromRows, onResetMeterUi };
 };
