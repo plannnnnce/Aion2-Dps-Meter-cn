@@ -33,7 +33,7 @@ class DataStorage {
     }
 
     fun appendMobCode(code: Int, name: String) {
-        //이건나중에 파일이나 서버에서 불러오는걸로
+        //稍后从文件或服务器加载
         mobCodeData[code] = name
     }
 
@@ -51,10 +51,10 @@ class DataStorage {
             nickname.toByteArray(Charsets.UTF_8).size == 2 &&
             nickname.toByteArray(Charsets.UTF_8).size < nicknameStorage[uid]!!.toByteArray(Charsets.UTF_8).size
         ) {
-            logger.debug("닉네임 등록 시도 취소 {} -x> {}",nicknameStorage[uid],nickname)
+            logger.debug("取消昵称注册 {} -x> {}",nicknameStorage[uid],nickname)
             return
         }
-        logger.debug("닉네임 등록 {} -> {}",nicknameStorage[uid],nickname)
+        logger.debug("昵称注册 {} -> {}",nicknameStorage[uid],nickname)
         nicknameStorage[uid] = nickname
     }
 
@@ -63,7 +63,7 @@ class DataStorage {
         byActorStorage.clear()
         byTargetStorage.clear()
         summonStorage.clear()
-        logger.info("데미지 패킷 초기화됨")
+        logger.info("伤害包已初始化")
     }
 
     private fun flushNicknameStorage() {

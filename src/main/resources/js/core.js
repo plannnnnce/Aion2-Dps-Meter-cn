@@ -11,9 +11,9 @@ class DpsApp {
     this.lastJson = null;
     this.isCollapse = false;
 
-    // 빈데이터 덮어쓰기 방지 스냅샷
+    // 防止空白数据覆盖快照
     this.lastSnapshot = null;
-    // reset 직후 서버가 구 데이터 계속 주는 현상 방지
+    // 防止重置后服务器继续发送旧数据现象
     this.resetPending = false;
 
     this.BATTLE_TIME_BASIS = "render";
@@ -21,7 +21,7 @@ class DpsApp {
     this.GRACE_ARM_MS = 1000;
 
 
-    // battleTime 캐시
+    // battleTime缓存
     this._battleTimeVisible = false;
     this._lastBattleTimeMs = null;
 
@@ -143,7 +143,7 @@ class DpsApp {
     const raw = window.dpsData?.getDpsData?.();
     // globalThis.uiDebug?.log?.("getBattleDetail", raw);
 
-    // 값이 없으면 타이머 숨김
+    // 如果没有值则隐藏计时器
     if (typeof raw !== "string") {
       this._rawLastChangedAt = now;
 
@@ -183,7 +183,7 @@ class DpsApp {
 
       this.resetPending = false;
     }
-    // 빈값은 ui 안덮어씀
+    // 不覆盖空值
     let rowsToRender = rows;
     if (rows.length === 0) {
       if (this.lastSnapshot) rowsToRender = this.lastSnapshot;
@@ -196,7 +196,7 @@ class DpsApp {
       this.lastSnapshot = rows;
     }
 
-    // 타이머 표시 여부
+    // 计时器显示与否
     const showByRender = rowsToRender.length > 0;
     const showBattleTime = this.BATTLE_TIME_BASIS === "server" ? showByServer : showByRender;
 
@@ -211,7 +211,7 @@ class DpsApp {
       this.battleTime.update(now, battleTimeMs);
     }
 
-    // 렌더
+    // 渲染
     this.elBossName.textContent = targetName ? targetName : "";
     this.meterUI.updateFromRows(rowsToRender);
   }
@@ -242,7 +242,7 @@ class DpsApp {
       const dpsRaw = isObj ? value.dps : value;
       const dps = Math.trunc(Number(dpsRaw));
 
-      // 소수점 한자리
+      // 一位小数
       const contribRaw = isObj ? Number(value.damageContribution) : NaN;
       const damageContribution = Number.isFinite(contribRaw)
         ? Math.round(contribRaw * 10) / 10
@@ -287,9 +287,9 @@ class DpsApp {
       if (!value || typeof value !== "object") continue;
 
       const nameRaw = typeof value.skillName === "string" ? value.skillName.trim() : "";
-      const baseName = nameRaw ? nameRaw : `스킬 ${code}`;
+      const baseName = nameRaw ? nameRaw : `技能 ${code}`;
 
-      // 공통 
+      // 公共
       const pushSkill = ({
         codeKey,
         name,
@@ -331,7 +331,7 @@ class DpsApp {
         });
       };
 
-      // 일반 피해
+      // 一般伤害
       pushSkill({
         codeKey: code,
         name: baseName,
@@ -344,11 +344,11 @@ class DpsApp {
         double: value.doubleTimes,
       });
 
-      // 도트피해
+      // DOT伤害
       if (Number(String(value.dotDamageAmount ?? "").replace(/,/g, "")) > 0) {
         pushSkill({
-          codeKey: `${code}-dot`, // 유니크키
-          name: `${baseName} - 지속피해`,
+          codeKey: `${code}-dot`, // 唯一键
+          name: `${baseName} - 持续伤害`,
           time: value.dotTimes,
           dmg: value.dotDamageAmount,
           countForTotals: false,
@@ -381,13 +381,13 @@ class DpsApp {
     this.collapseBtn?.addEventListener("click", () => {
       this.isCollapse = !this.isCollapse;
 
-      // 접히면 polling 멈추고 완전 초기화
+      // 折叠时停止轮询并完全初始化
       if (this.isCollapse) {
         this.stopPolling();
         this.elList.style.display = "none";
         this.resetAll({ callBackend: true });
       } else {
-        // 펼치면 polling 재개하고 즉시 1회 fetch
+        // 展开时重新开始轮询并立即获取1次
         this.elList.style.display = "grid";
         this.startPolling();
         this.fetchDps();
@@ -438,7 +438,7 @@ class DpsApp {
   }
 }
 
-// 디버그콘솔
+// 调试控制台
 const setupDebugConsole = () => {
   const g = globalThis;
   if (globalThis.uiDebug?.log) return globalThis.uiDebug;

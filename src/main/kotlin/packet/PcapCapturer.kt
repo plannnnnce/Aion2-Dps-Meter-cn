@@ -2,16 +2,14 @@ package com.tbread.packet
 
 import com.tbread.config.PcapCapturerConfig
 import kotlinx.coroutines.channels.Channel
-import org.pcap4j.core.BpfProgram
-import org.pcap4j.core.PacketListener
-import org.pcap4j.core.PcapNativeException;
-import org.pcap4j.core.PcapNetworkInterface
-import org.pcap4j.core.Pcaps
+import org.pcap4j.core.*
+import org.pcap4j.packet.IpV4Packet
 import org.pcap4j.packet.TcpPacket
 import org.slf4j.LoggerFactory
 import java.net.DatagramSocket
 import java.net.InetAddress
 import kotlin.system.exitProcess
+
 
 class PcapCapturer(private val config: PcapCapturerConfig, private val channel: Channel<ByteArray>) {
 
@@ -22,7 +20,7 @@ class PcapCapturer(private val config: PcapCapturerConfig, private val channel: 
             return try {
                 Pcaps.findAllDevs() ?: emptyList()
             } catch (e: PcapNativeException) {
-                logger.error("Pcap 핸들러 초기화 실패",e)
+                logger.error("Pcap处理器初始化失败",e)
                 exitProcess(2)
             }
         }
@@ -39,7 +37,7 @@ class PcapCapturer(private val config: PcapCapturerConfig, private val channel: 
                 }
             }
         }
-        logger.warn("네트워크 디바이스 검색 실패")
+        logger.warn("网络设备搜索失败")
         return null
     }
 
@@ -49,23 +47,30 @@ class PcapCapturer(private val config: PcapCapturerConfig, private val channel: 
         socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
         val ip = socket.localAddress.hostAddress
         if (ip == null) {
-            logger.error("ip 검색에 실패했습니다.")
+            logger.error("IP搜索失败.")
             exitProcess(1)
-            //나중에 gui 연결후 어떻게할지 정리해서 처리
+            //稍后连接GUI后整理并处理
         }
         val nif = getMainDevice(ip)
         if (nif == null){
-            logger.error("네트워크 디바이스 탐색에 실패했습니다.")
+            logger.error("网络设备搜索失败.")
             exitProcess(1)
         }
         val handle = nif.openLive(config.snapshotSize, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, config.timeout)
-        val filter = "src net ${config.serverIp} and port ${config.serverPort}"
+//        val filter = "src net ${config.serverIp} and port ${config.serverPort}"
+        val filter = "tcp src port ${config.serverPort}"
         handle.setFilter(filter, BpfProgram.BpfCompileMode.OPTIMIZE)
-        logger.info("패킷필터 설정 \"$filter\"")
+        logger.info("包过滤器设置 \"$filter\"")
         val listener = PacketListener { packet ->
+            val ipv4 = packet.get(IpV4Packet::class.java)
+            val srcIp: String? = ipv4.getHeader().getSrcAddr().getHostAddress()
+            val dstIp: String? = ipv4.getHeader().getDstAddr().getHostAddress()
+            logger.info("receive packet from {} to {}", srcIp, dstIp)
             if (packet.contains(TcpPacket::class.java)) {
                 val tcpPacket = packet.get(TcpPacket::class.java)
+
                 val payload = tcpPacket.payload
+                tcpPacket.header.srcPort
                 if (payload != null) {
                     val data = payload.rawData
                     if (data.isNotEmpty()) {
@@ -79,7 +84,7 @@ class PcapCapturer(private val config: PcapCapturerConfig, private val channel: 
                 h.loop(-1, listener)
             }
         } catch (e: InterruptedException) {
-            logger.error("채널 소비에서 문제가 발생했습니다.",e)
+            logger.error("通道消费中出现问题.",e)
         }
     }
 

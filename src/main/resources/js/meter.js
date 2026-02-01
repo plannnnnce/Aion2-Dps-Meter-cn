@@ -80,7 +80,7 @@ const createMeterUI = ({ elList, dpsFormatter, getUserName, onClickUserRow }) =>
     return view;
   };
 
-  // 상위 6개 + 유저(유저가 top6 밖이면 7개)
+  // 上级6个 + 用户(用户在top6之外则为7个)
   const getDisplayRows = (sortedAll) => {
     const top6 = sortedAll.slice(0, 6);
     const user = sortedAll.find((x) => x.isUser);
@@ -101,7 +101,7 @@ const createMeterUI = ({ elList, dpsFormatter, getUserName, onClickUserRow }) =>
       candidates.push({ id, t: view.lastSeenAt || 0 });
     }
 
-    candidates.sort((a, b) => a.t - b.t); // 오래된거 제거
+    candidates.sort((a, b) => a.t - b.t); // 删除旧的
 
     for (let i = 0; rowViewById.size > MAX_CACHE && i < candidates.length; i++) {
       const id = candidates[i].id;
@@ -170,7 +170,7 @@ const createMeterUI = ({ elList, dpsFormatter, getUserName, onClickUserRow }) =>
         view.prevContribClass = contributionClass;
       }
 
-      view.dpsNumber.textContent = `${dpsFormatter.format(dps)}/초`;
+      view.dpsNumber.textContent = `${dpsFormatter.format(dps)}/秒`;
       view.dpsContribution.textContent = `${damageContribution.toFixed(1)}%`;
       const ratio = Math.max(0, Math.min(1, dps / topDps));
       view.fillEl.style.transform = `scaleX(${ratio})`;

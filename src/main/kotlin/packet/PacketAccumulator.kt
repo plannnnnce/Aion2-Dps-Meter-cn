@@ -9,18 +9,18 @@ class PacketAccumulator {
 
     private val buffer = ByteArrayOutputStream()
 
-    // 프로퍼티스로 옮길까? 우선도는 낮음
+    // 是否要移到属性配置？优先级较低
     private val MAX_BUFFER_SIZE = 2 * 1024 * 1024
     private val WARN_BUFFER_SIZE = 1024 * 1024
 
     @Synchronized
     fun append(data: ByteArray) {
-        //뭔가 꼬였을때 한번 날려서 oom 회피하기, 추후 시간체크같은거 추가해서 용량조절이랑 발생 상황 체크 해주면 될듯?
+        // 出现问题时清空一次以避免OOM，之后加上时间检查来进行容量调整和发生情况监控？
         if (buffer.size() in (WARN_BUFFER_SIZE + 1)..<MAX_BUFFER_SIZE) {
-            logger.warn("{} : 버퍼 용량 제한 임박",logger.name)
+            logger.warn("{} : 缓冲区容量限制临近",logger.name)
         }
         if (buffer.size() > MAX_BUFFER_SIZE) {
-            logger.error("{} : 버퍼 용량 제한 초과, 강제 초기화 진행",logger.name)
+            logger.error("{} : 缓冲区容量限制超限，强制初始化进行",logger.name)
             buffer.reset()
         }
         buffer.write(data)
@@ -28,7 +28,7 @@ class PacketAccumulator {
 
     @Synchronized
     fun indexOf(target: ByteArray): Int {
-        //매직패킷 탐색용
+        // 用于查找魔法包
         val allBytes = buffer.toByteArray()
         if (allBytes.size < target.size) return -1
 
@@ -47,8 +47,8 @@ class PacketAccumulator {
 
     @Synchronized
     fun getRange(start: Int, endExclusive: Int): ByteArray {
-        //완성패킷 찾았을때 복사용
-        //todo: 패킷구조 좀 더확실하게 확인되면 바꿀수도? (페이로드안에 매직패킷처럼 생긴 데이터 있는경우 / 아직까진 사례 없음)
+        // 找到完整包时用于复制
+        //待办：如果包结构确认得更清楚可以更改？（载荷内有类似魔法包的数据的情况 / 目前还没有这种情况）
         val allBytes = buffer.toByteArray()
         if (start < 0 || endExclusive > allBytes.size || start > endExclusive) {
             return ByteArray(0)
@@ -58,11 +58,11 @@ class PacketAccumulator {
 
     @Synchronized
     fun discardBytes(length: Int) {
-        //완성패킷 찾았을때 제거용
-        //gc 관련 문서좀 더 찾아서 어느정도의 효과인지 체크좀 해야할것같음
+        // 找到完整包时用于删除
+        // 需要多查一些GC相关的文档来检查效果如何
         val allBytes = buffer.toByteArray()
         buffer.reset()
-        //이거 싹 비우고 재조립하는게 최선이 맞나? 나중에 확인 필요함 우선도는 낮음
+        // 全部清空再重组是最好的方法吗？之后需要确认，优先级较低
 
         if (length < allBytes.size) {
             buffer.write(allBytes, length, allBytes.size - length)

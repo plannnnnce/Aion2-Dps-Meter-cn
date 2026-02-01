@@ -22,16 +22,16 @@ const createDetailsUI = ({
     return Number.isFinite(n) ? `${n.toFixed(1)}%` : "-";
   };
   const STATUS = [
-    { label: "누적 피해량", getValue: (d) => formatNum(d?.totalDmg) },
-    { label: "피해량 기여도", getValue: (d) => pctText(d?.contributionPct) },
+    { label: "累计伤害量", getValue: (d) => formatNum(d?.totalDmg) },
+    { label: "伤害量贡献度", getValue: (d) => pctText(d?.contributionPct) },
     // { label: "보스 막기비율", getValue: (d) => d?.parry ?? "-" },
     // { label: "보스 회피비율", getValue: (d) => d?.eva ?? "-" },
-    { label: "치명타 비율", getValue: (d) => pctText(d?.totalCritPct) },
-    { label: "완벽 비율", getValue: (d) => pctText(d?.totalPerfectPct) },
-    { label: "강타 비율", getValue: (d) => pctText(d?.totalDoublePct) },
-    { label: "백어택 비율", getValue: (d) => pctText(d?.totalBackPct) },
-    { label: "보스 막기비율", getValue: (d) => pctText(d?.totalParryPct) },
-    { label: "전투시간", getValue: (d) => d?.combatTime ?? "-" },
+    { label: "致命打击比例", getValue: (d) => pctText(d?.totalCritPct) },
+    { label: "完美比例", getValue: (d) => pctText(d?.totalPerfectPct) },
+    { label: "强击比例", getValue: (d) => pctText(d?.totalDoublePct) },
+    { label: "背击比例", getValue: (d) => pctText(d?.totalBackPct) },
+    { label: "BOSS格挡比例", getValue: (d) => pctText(d?.totalParryPct) },
+    { label: "战斗时间", getValue: (d) => d?.combatTime ?? "-" }
   ];
 
   const createStatView = (labelText) => {
@@ -190,7 +190,7 @@ const createDetailsUI = ({
   };
 
   const render = (details, row) => {
-    detailsTitle.textContent = `${String(row.name)} 상세내역`;
+    detailsTitle.textContent = `${String(row.name)} 详细信息`;
     renderStats(details);
     renderSkills(details);
   };
@@ -217,10 +217,10 @@ const createDetailsUI = ({
 
     openedRowId = rowId;
 
-    detailsTitle.textContent = `${row.name} 상세내역`;
+    detailsTitle.textContent = `${row.name} 详细信息`;
     detailsPanel.classList.add("open");
 
-    // 이전 값 비우기
+    // 清除前值
     for (let i = 0; i < statSlots.length; i++) statSlots[i].valueEl.textContent = "-";
     for (let i = 0; i < skillSlots.length; i++) {
       skillSlots[i].rowEl.style.display = "none";

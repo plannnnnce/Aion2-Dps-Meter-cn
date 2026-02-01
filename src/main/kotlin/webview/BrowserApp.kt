@@ -86,7 +86,7 @@ class BrowserApp(private val dpsCalculator: DpsCalculator) : Application() {
             setBgMethod.isAccessible = true
             setBgMethod.invoke(page, 0)
         } catch (e: Exception) {
-            logger.error("리플렉션 실패",e)
+            logger.error("反射失败",e)
         }
 
         stage.initStyle(StageStyle.TRANSPARENT)

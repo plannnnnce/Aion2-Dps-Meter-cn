@@ -128,8 +128,13 @@
       }
 
       if (target) {
-        const label = target.prerelease ? "베타" : "정식";
-        text.textContent = `신규 ${label} 업데이트가 있습니다!\n\n현재 버전 : v.${current.raw}\n최신 버전 : v.${target.version.raw}\n\n업데이트를 먼저 진행해주세요.`;
+        const label = target.prerelease ? "测试" : "正式";
+        text.textContent = `有新的${label}版本更新！
+
+当前版本：v.${current.raw}
+最新版本：v.${target.version.raw}
+
+请先进行更新.`;
         modal.classList.add("isOpen");
       }
     }, START_DELAY);

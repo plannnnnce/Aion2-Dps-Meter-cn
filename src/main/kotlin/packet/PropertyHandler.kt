@@ -19,10 +19,10 @@ object PropertyHandler {
                 props.load(fis)
             }
         } catch (e: FileNotFoundException) {
-            logger.info("설정파일이 존재하지 않아 파일을 생성합니다.")
+            logger.info("由于配置文件不存在，创建文件.")
             FileOutputStream(fname).use {}
         } catch (e: IOException) {
-            logger.error("설정파일 읽기에 실패했습니다.")
+            logger.error("无法读取配置文件.")
         }
     }
 

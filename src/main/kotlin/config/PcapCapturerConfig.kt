@@ -17,7 +17,7 @@ data class PcapCapturerConfig(
             val timeout = PropertyHandler.getProperty("server.timeout")?.toInt() ?: 10
             val snapSize = PropertyHandler.getProperty("server.maxSnapshotSize")?.toInt() ?: 65536
             logger.debug("{},{},{},{}", ip, port, timeout, snapSize)
-            logger.info("프로퍼티스 초기화 완료")
+            logger.info("Propertis初始化完成")
             return PcapCapturerConfig(ip, port, timeout, snapSize)
         }
     }

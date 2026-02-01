@@ -14,10 +14,10 @@ class StreamAssembler(private val processor: StreamProcessor) {
 
             while (true) {
                 val suffixIndex = buffer.indexOf(MAGIC_PACKET)
-                //매직패킷찾기
+                //查找魔法包
 
                 if (suffixIndex == -1) {
-                    //없으면 덜왔으니 대기
+                    //如果没有则表示未完全到达，等待
                     break
                 }
                 val cutPoint = suffixIndex + MAGIC_PACKET.size
@@ -29,7 +29,7 @@ class StreamAssembler(private val processor: StreamProcessor) {
                 }
 
                 buffer.discardBytes(cutPoint)
-                //완성 처리된건 지우기
+                //删除已完成处理的
             }
     }
 }
