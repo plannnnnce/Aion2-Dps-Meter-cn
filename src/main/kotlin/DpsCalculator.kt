@@ -2,12 +2,13 @@ package com.tbread
 
 import com.tbread.entity.DpsData
 import com.tbread.entity.JobClass
+import com.tbread.entity.ParsedDamagePacket
 import com.tbread.entity.PersonalData
 import com.tbread.entity.TargetInfo
-import kotlinx.coroutines.Job
+import com.tbread.logging.DebugLogWriter
 import org.slf4j.LoggerFactory
-import kotlin.math.log
 import kotlin.math.roundToInt
+import java.util.UUID
 
 class DpsCalculator(private val dataStorage: DataStorage) {
     private val logger = LoggerFactory.getLogger(DpsCalculator::class.java)
@@ -15,6 +16,25 @@ class DpsCalculator(private val dataStorage: DataStorage) {
     enum class Mode {
         ALL, BOSS_ONLY
     }
+
+    enum class TargetSelectionMode(val id: String) {
+        MOST_DAMAGE("mostDamage"),
+        MOST_RECENT("mostRecent"),
+        ALL_TARGETS("allTargets");
+
+        companion object {
+            fun fromId(id: String?): TargetSelectionMode {
+                return entries.firstOrNull { it.id == id } ?: MOST_DAMAGE
+            }
+        }
+    }
+
+    data class TargetDecision(
+        val targetIds: Set<Int>,
+        val targetName: String,
+        val mode: TargetSelectionMode,
+        val trackingTargetId: Int,
+    )
 
     companion object {
         val POSSIBLE_OFFSETS: IntArray =
@@ -34,7 +54,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
 
         val SKILL_MAP = mapOf(
             /*
-        治疗师
+        Cleric
          */
             17010000 to "大地的报复",
             17020000 to "雷电",
@@ -83,7 +103,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
             17800000 to "璀璨护佑",
 
             /*
-        战士
+        Gladiator
          */
             11020000 to "锐利一击",
             11030000 to "撕裂一击",
@@ -137,7 +157,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
             11800008 to "杀气爆发",
 
             /*
-        精灵师
+        Elementalist
          */
             16010000 to "寒气冲击",
             16020000 to "真空爆炸",
@@ -213,7 +233,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
 
 
             /*
-        执法者
+        Chanter
          */
             18010000 to "击破碎",
             18020000 to "共鸣碎",
@@ -263,7 +283,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
             18800001 to "风之承诺",
 
             /*
-        弓箭手
+        Ranger
          */
             14020000 to "狙击",
             14030000 to "连射",
@@ -304,7 +324,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
             14200000 to "洞察之眼",
 
             /*
-        魔法师
+        Sorcerer
          */
             15210000 to "火焰箭",
             15030000 to "炸裂",
@@ -356,7 +376,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
             15700000 to "强袭轰炸",
 
             /*
-        保护者
+        Templar
          */
             12010000 to "猛烈一击",
             12020000 to "会心一击",
@@ -406,7 +426,7 @@ class DpsCalculator(private val dataStorage: DataStorage) {
             12700000 to "强袭猛击",
 
             /*
-        刺客
+        Assassin
          */
             13010000 to "快速斩",
             13030000 to "绝魂斩",
@@ -851,10 +871,15 @@ class DpsCalculator(private val dataStorage: DataStorage) {
 
     private var mode: Mode = Mode.BOSS_ONLY
     private var currentTarget: Int = 0
+    @Volatile private var targetSelectionMode: TargetSelectionMode = TargetSelectionMode.MOST_DAMAGE
 
     fun setMode(mode: Mode) {
         this.mode = mode
-        //切换模式时初始化以前的记录？
+        //모드 변경시 이전기록 초기화?
+    }
+
+    fun setTargetSelectionModeById(id: String?) {
+        targetSelectionMode = TargetSelectionMode.fromId(id)
     }
 
     fun getDps(): DpsData {
@@ -873,19 +898,31 @@ class DpsCalculator(private val dataStorage: DataStorage) {
                     targetInfoMap[target] = targetInfo!!
                 }
                 targetInfo!!.processPdp(pdp)
-                //似乎应该在这里就完成下面的重新计算，然后再选择，之后需要考虑一下
+                //그냥 아래에서 재계산하는거 여기서 해놓고 아래에선 그냥 골라서 주는게 맞는거같은데 나중에 고민할필요있을듯
             }
         }
         val dpsData = DpsData()
-        val targetData = decideTarget()
-        dpsData.targetName = targetData.second
-        val battleTime = targetInfoMap[currentTarget]?.parseBattleTime() ?: 0
+        val targetDecision = decideTarget()
+        dpsData.targetName = targetDecision.targetName
+        dpsData.targetMode = targetDecision.mode.id
+
+        currentTarget = targetDecision.trackingTargetId
+        dataStorage.setCurrentTarget(currentTarget)
+
+        val battleTime = when (targetDecision.mode) {
+            TargetSelectionMode.ALL_TARGETS -> parseAllBattleTime(targetDecision.targetIds)
+            else -> targetInfoMap[currentTarget]?.parseBattleTime() ?: 0
+        }
         val nicknameData = dataStorage.getNickname()
         var totalDamage = 0.0
         if (battleTime == 0L) {
             return dpsData
         }
-        pdpMap[currentTarget]!!.forEach lastPdpLoop@{ pdp ->
+        val pdps = when (targetDecision.mode) {
+            TargetSelectionMode.ALL_TARGETS -> collectAllPdp(pdpMap, targetDecision.targetIds)
+            else -> pdpMap[currentTarget]?.toList() ?: return dpsData
+        }
+        pdps.forEach { pdp ->
             totalDamage += pdp.getDamage()
             val uid = dataStorage.getSummonData()[pdp.getActorId()] ?: pdp.getActorId()
             val nickname:String = nicknameData[uid]
@@ -918,62 +955,131 @@ class DpsCalculator(private val dataStorage: DataStorage) {
         return dpsData
     }
 
-    private fun decideTarget(): Pair<Int, String> {
-        val target: Int = targetInfoMap.maxByOrNull { it.value.damagedAmount() }?.key ?: 0
-        var targetName = ""
-        currentTarget = target
-        dataStorage.setCurrentTarget(target)
-        //是否也应添加命中数累积方式而不仅仅是伤害累积？目前的方式在征服战这类战斗中切换目标需要太长时间
-        if (dataStorage.getMobData().containsKey(target)) {
-            val mobCode = dataStorage.getMobData()[target]
-            if (dataStorage.getMobCodeData().containsKey(mobCode)) {
-                targetName = dataStorage.getMobCodeData()[mobCode]!!
+    private fun decideTarget(): TargetDecision {
+        if (targetInfoMap.isEmpty()) {
+            return TargetDecision(emptySet(), "", targetSelectionMode, 0)
+        }
+        val mostDamageTarget = targetInfoMap.maxByOrNull { it.value.damagedAmount() }?.key ?: 0
+        val mostRecentTarget = targetInfoMap.maxByOrNull { it.value.lastDamageTime() }?.key ?: 0
+
+        return when (targetSelectionMode) {
+            TargetSelectionMode.MOST_DAMAGE -> {
+                TargetDecision(setOf(mostDamageTarget), resolveTargetName(mostDamageTarget), targetSelectionMode, mostDamageTarget)
+            }
+            TargetSelectionMode.MOST_RECENT -> {
+                TargetDecision(setOf(mostRecentTarget), resolveTargetName(mostRecentTarget), targetSelectionMode, mostRecentTarget)
+            }
+            TargetSelectionMode.ALL_TARGETS -> {
+                TargetDecision(targetInfoMap.keys.toSet(), "", targetSelectionMode, mostRecentTarget)
             }
         }
+    }
 
-        return Pair(target, targetName)
+    private fun resolveTargetName(target: Int): String {
+        if (!dataStorage.getMobData().containsKey(target)) return ""
+        val mobCode = dataStorage.getMobData()[target] ?: return ""
+        return dataStorage.getMobCodeData()[mobCode] ?: ""
+    }
+
+    private fun parseAllBattleTime(targetIds: Set<Int>): Long {
+        val targets = targetIds.mapNotNull { targetInfoMap[it] }
+        if (targets.isEmpty()) return 0
+        val start = targets.minOf { it.firstDamageTime() }
+        val end = targets.maxOf { it.lastDamageTime() }
+        return end - start
+    }
+
+    private fun collectAllPdp(
+        pdpMap: Map<Int, Iterable<ParsedDamagePacket>>,
+        targetIds: Set<Int>,
+    ): List<ParsedDamagePacket> {
+        val combined = mutableListOf<ParsedDamagePacket>()
+        val seen = mutableSetOf<UUID>()
+        targetIds.forEach { targetId ->
+            pdpMap[targetId]?.forEach { pdp ->
+                if (seen.add(pdp.getUuid())) {
+                    combined.add(pdp)
+                }
+            }
+        }
+        return combined
     }
 
     private fun inferOriginalSkillCode(skillCode: Int): Int? {
         for (offset in POSSIBLE_OFFSETS) {
             val possibleOrigin = skillCode - offset
             if (SKILL_CODES.binarySearch(possibleOrigin) >= 0) {
-                logger.debug("成功推断出原始技能代码 :{}", possibleOrigin)
+                logger.debug("Inferred original skill code: {}", possibleOrigin)
                 return possibleOrigin
             }
         }
-        logger.debug("技能代码推断失败")
+        logger.debug("Failed to infer skill code")
         return null
     }
 
     fun resetDataStorage() {
         dataStorage.flushDamageStorage()
         targetInfoMap.clear()
-        logger.info("目标伤害累积数据初始化完成")
+        logger.info("Target damage accumulation reset")
     }
 
     fun analyzingData(uid: Int) {
         val dpsData = getDps()
         dpsData.map.forEach { (_, pData) ->
             logger.debug("-----------------------------------------")
+            DebugLogWriter.debug(logger, "-----------------------------------------")
             logger.debug(
-                "昵称: {} 职业: {} 总伤害量: {} 贡献度: {}",
+                "Nickname: {} job: {} total damage: {} contribution: {}",
                 pData.nickname,
                 pData.job,
                 pData.amount,
                 pData.damageContribution
             )
-            pData.analyzedData.forEach { (skillKey, skillData) ->
-                logger.debug("技能(代码): {} 技能总伤害量: {}", SKILL_MAP[skillKey] ?: skillKey, skillData.damageAmount)
+            DebugLogWriter.debug(
+                logger,
+                "Nickname: {} job: {} total damage: {} contribution: {}",
+                pData.nickname,
+                pData.job,
+                pData.amount,
+                pData.damageContribution
+            )
+            pData.analyzedData.forEach { (key, data) ->
                 logger.debug(
-                    "使用次数: {} 暴击次数: {} 暴击率:{}",
-                    skillData.times,
-                    skillData.critTimes,
-                    if (skillData.times > 0) skillData.critTimes.toDouble() / skillData.times * 100 else 0.0
+                    "Skill (code): {} total damage: {}",
+                    SKILL_MAP[key] ?: key,
+                    data.damageAmount
                 )
-                logger.debug("技能的伤害占比: {}%", (skillData.damageAmount / pData.amount * 100).roundToInt())
+                DebugLogWriter.debug(
+                    logger,
+                    "Skill (code): {} total damage: {}",
+                    SKILL_MAP[key] ?: key,
+                    data.damageAmount
+                )
+                logger.debug(
+                    "Uses: {} critical hits: {} critical hit rate: {}",
+                    data.times,
+                    data.critTimes,
+                    data.critTimes / data.times * 100
+                )
+                DebugLogWriter.debug(
+                    logger,
+                    "Uses: {} critical hits: {} critical hit rate: {}",
+                    data.times,
+                    data.critTimes,
+                    data.critTimes / data.times * 100
+                )
+                logger.debug(
+                    "Skill damage share: {}%",
+                    (data.damageAmount / pData.amount * 100).roundToInt()
+                )
+                DebugLogWriter.debug(
+                    logger,
+                    "Skill damage share: {}%",
+                    (data.damageAmount / pData.amount * 100).roundToInt()
+                )
             }
             logger.debug("-----------------------------------------")
+            DebugLogWriter.debug(logger, "-----------------------------------------")
         }
     }
 

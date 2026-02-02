@@ -19,10 +19,10 @@ object PropertyHandler {
                 props.load(fis)
             }
         } catch (e: FileNotFoundException) {
-            logger.info("由于配置文件不存在，创建文件.")
+            logger.info("Settings file not found; creating a new one.")
             FileOutputStream(fname).use {}
         } catch (e: IOException) {
-            logger.error("无法读取配置文件.")
+            logger.error("Failed to read settings file.")
         }
     }
 

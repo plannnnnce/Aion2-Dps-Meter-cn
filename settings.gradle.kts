@@ -13,4 +13,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "aion2meter4j"
+rootProject.name = "aion2-meter-tw"

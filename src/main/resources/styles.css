@@ -7,8 +7,8 @@
 
   --text-color: rgb(255, 255, 255);
   --text-shadow:
-    1px 0 0 rgba(0, 0, 0, 0.55), -1px 0 0 rgba(0, 0, 0, 0.55), 0 1px 0 rgba(0, 0, 0, 0.55),
-    0 -1px 0 rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35);
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 2px 8px rgba(0, 0, 0, 0.4);
 
   --rounded-lg: 12px;
   --rounded: 10px;
@@ -20,7 +20,7 @@
 }
 
 * {
-  font-family: "Spoqa Han Sans Neo", sans-serif;
+  font-family: "Pretendard", "Noto Sans KR", "Noto Sans SC", "Noto Sans TC", sans-serif;
   margin: 0;
   padding: 0;
   -webkit-user-select: none;
@@ -76,7 +76,7 @@
     align-items: center;
     font-weight: bold;
     color: white;
-    gap: 8px;
+    gap: 6px;
     text-shadow: var(--text-shadow);
     cursor: pointer;
     .headerBtn {
@@ -85,6 +85,160 @@
       width: 20px;
       height: 20px;
     }
+    .metricToggleBtn {
+      width: auto;
+      height: auto;
+      min-width: 26px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+    }
+  }
+}
+.settingsPanel {
+  position: absolute;
+  color: var(--text-color);
+  display: none;
+  left: 358px;
+  top: 0;
+  width: 420px;
+  border: 1px solid var(--panel-border);
+  background: rgb(12, 22, 40);
+  padding: 12px 8px;
+  border-radius: var(--rounded-lg);
+  text-shadow: var(--text-shadow);
+  z-index: 2;
+
+  &.isOpen {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .settingsHeader {
+    display: flex;
+    align-items: center;
+    color: var(--title);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0 16px 10px;
+
+    .settingsTitle {
+      font-weight: 700;
+    }
+
+    .closeX {
+      cursor: pointer;
+      margin-left: auto;
+      user-select: none;
+      font-size: 22px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      transition: 0.2s;
+    }
+
+    .closeX:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .settingsBody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 16px 8px;
+  }
+
+  .settingsRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .settingsRowInput {
+    align-items: center;
+  }
+
+  .settingsInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .settingsLabel {
+    font-size: 12px;
+    opacity: 0.75;
+  }
+
+  .settingsValue {
+    display: flex;
+    gap: 6px;
+    font-weight: 700;
+  }
+
+  .lockedIp {
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .lockedPort::before {
+    content: "/";
+    opacity: 0.6;
+    margin: 0 6px;
+  }
+
+  .characterNameInput {
+    flex: 1;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--rounded-xs);
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--text-color);
+  }
+
+  .settingsAction {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--rounded-xs);
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .settingsCheckbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .discordButton {
+    border: none;
+    border-radius: var(--rounded-xs);
+    padding: 8px;
+    color: white;
+    cursor: pointer;
+    background: linear-gradient(90deg, #5865f2, #4e5bd5);
+    text-shadow: var(--text-shadow);
+    width: 100%;
+    text-align: center;
+  }
+
+  .quitButton {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: var(--rounded-xs);
+    padding: 8px;
+    color: white;
+    cursor: pointer;
+    background: linear-gradient(90deg, #b93535, #922c2c);
+    text-shadow: var(--text-shadow);
+    width: 100%;
   }
 }
 .list {
@@ -121,6 +275,7 @@
     inset: 0;
 
     background: var(--row-fill);
+    opacity: 0.8;
     transform-origin: left center;
     transform: scaleX(0);
 
@@ -184,6 +339,13 @@
     font-size: 14px;
   }
 
+  .analysisStatus {
+    color: rgba(255, 255, 255, 0.75);
+    text-shadow: var(--text-shadow);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
   .status {
     width: 10px;
     height: 10px;
@@ -214,10 +376,10 @@
   /* top: calc(100% + 4px); */
   top: 0;
   font-weight: bold;
-  width: 1080px;
+  width: 864px;
   border: 1px solid var(--panel-border);
-  background: rgb(12, 22, 40);
-  padding: 16px 8px;
+  background: rgba(12, 22, 40, var(--details-bg-opacity, 0.5));
+  padding: 6px 4px;
   border-radius: var(--rounded-lg);
 
   &.open {
@@ -228,8 +390,8 @@
     align-items: center;
     color: var(--title);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 0 28px;
-    padding-bottom: 12px;
+    padding: 0 12px;
+    padding-bottom: 6px;
 
     .tooltip {
       opacity: 0.6;
@@ -237,9 +399,48 @@
 
       font-size: 12px;
     }
+    .detailsHeaderControls {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .detailsSettingsMenuWrapper {
+      position: relative;
+    }
+    .detailsSettingsBtn {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: inherit;
+      transition: 0.2s;
+    }
+    .detailsSettingsBtn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .detailsSettingsMenu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      min-width: 260px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(12, 22, 40, 0.95);
+      box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+      display: none;
+      z-index: 5;
+    }
+    .detailsSettingsMenu.isOpen {
+      display: block;
+    }
     .closeX {
       cursor: pointer;
-      margin-left: auto;
       user-select: none;
       font-size: 22px;
       padding: 2px 8px;
@@ -254,9 +455,9 @@
 
   .detailsStats {
     display: grid;
-    gap: 12px 24px;
+    gap: 6px 12px;
     grid-template-columns: repeat(2, 1fr);
-    padding: 12px 28px;
+    padding: 6px 12px;
 
     .stat {
       display: flex;
@@ -265,35 +466,71 @@
     }
   }
 
+  .detailsSettings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .detailsSettingsLabel {
+      font-size: 12px;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .detailsSettingsControl {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .detailsOpacityInput {
+      width: 190px;
+    }
+
+    .detailsOpacityValue {
+      font-size: 12px;
+      opacity: 0.75;
+      min-width: 44px;
+      text-align: right;
+    }
+  }
+
   .detailsSkills {
     .cell {
-      min-width: 60px;
+      min-width: 46px;
+      display: flex;
+      align-items: center;
     }
     .cell.center {
-      text-align: center;
+      justify-content: center;
+      flex: 0 0 56px;
     }
     .cell.name {
-      flex: 0 0 210px;
+      flex: 0 0 200px;
+      justify-content: flex-start;
+      white-space: nowrap;
 
       color: var(--row-fill);
     }
 
     .cell.dmg {
-      flex: 1;
+      flex: 0 0 220px;
       text-align: center;
     }
     .cell.right {
-      text-align: right;
+      justify-content: flex-end;
     }
     .cell.center {
-      text-align: center;
+      justify-content: center;
+      flex: 0 0 56px;
     }
 
     .skillHeader {
       display: flex;
       align-items: center;
-      gap: 24px;
-      padding: 12px 28px;
+      gap: 12px;
+      padding: 6px 12px;
 
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       .cell.name {
@@ -302,7 +539,7 @@
     }
     .skills {
       max-height: 562px;
-      padding: 0 28px;
+      padding: 0 12px;
       overflow-y: auto;
       overflow-x: hidden;
       scrollbar-gutter: stable;
@@ -329,8 +566,8 @@
       .skillRow {
         display: flex;
         align-items: center;
-        gap: 24px;
-        padding: 6px 0;
+        gap: 12px;
+        padding: 2px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         &:last-child {
           border-bottom: none;
@@ -339,7 +576,7 @@
         .cell.dmg {
           position: relative;
           overflow: hidden;
-          height: 32px;
+          height: 20px;
 
           .dmgFill {
             position: absolute;
@@ -389,25 +626,477 @@
       margin: 24px 0px;
       white-space: pre-line;
     }
-    .updateModalActions {
-      display: flex;
-      gap: 12px;
-      .updateModalBtn {
-        border: none;
-        background: #1877f2;
-        font-size: 18px;
-        font-weight: bold;
-        border-radius: 8px;
-        padding: 8px;
-        width: 100%;
-        cursor: pointer;
-        color: white;
-        text-shadow: var(--text-shadow);
-      }
-      .updateModalBtn.secondary {
-        background: rgba(255, 255, 255, 0.16);
-        color: white;
-      }
+    .updateModalBtn {
+      border: none;
+      background: var(--error-fill);
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      padding: 8px;
+      width: 100%;
+      cursor: pointer;
+      color: white;
+      text-shadow: var(--text-shadow);
     }
   }
+}
+
+/* Compatibility: flatten nested rules for environments without CSS nesting support. */
+.header .bossIcon {
+  display: flex;
+  align-items: center;
+  width: 88px;
+}
+.header .bossIcon img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  width: 100%;
+}
+.header .bossNames {
+  flex: 1;
+  color: var(--text-color);
+  text-shadow: var(--text-shadow);
+  font-weight: bold;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+}
+.header .headerBtns {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  color: white;
+  gap: 8px;
+  text-shadow: var(--text-shadow);
+  cursor: pointer;
+}
+.header .headerBtns .headerBtn {
+  display: flex;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.settingsPanel.isOpen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settingsPanel .settingsHeader {
+  display: flex;
+  align-items: center;
+  color: var(--title);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 16px 10px;
+}
+.settingsPanel .settingsHeader .settingsTitle {
+  font-weight: 700;
+}
+.settingsPanel .settingsHeader .closeX {
+  cursor: pointer;
+  margin-left: auto;
+  user-select: none;
+  font-size: 22px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: 0.2s;
+}
+.settingsPanel .settingsHeader .closeX:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.settingsPanel .settingsBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 8px;
+}
+.settingsPanel .settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.settingsPanel .settingsRowSelect {
+  align-items: center;
+}
+.settingsPanel .settingsRowInput {
+  align-items: center;
+}
+.settingsPanel .settingsInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.settingsPanel .settingsLabel {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.settingsPanel .settingsValue {
+  display: flex;
+  gap: 6px;
+  font-weight: 700;
+}
+.settingsPanel .lockedPort::before {
+  content: "/";
+  opacity: 0.6;
+  margin: 0 6px;
+}
+.settingsPanel .characterNameInput {
+  flex: 1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--rounded-xs);
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text-color);
+}
+.settingsPanel .settingsAction {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--rounded-xs);
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text-color);
+  font-weight: 600;
+  cursor: pointer;
+}
+.settingsPanel .settingsSelect {
+  min-width: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--rounded-xs);
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text-color);
+}
+.settingsPanel .settingsCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.settingsPanel .discordButton {
+  border: none;
+  border-radius: var(--rounded-xs);
+  padding: 8px;
+  color: white;
+  cursor: pointer;
+  background: linear-gradient(90deg, #5865f2, #4e5bd5);
+  text-shadow: var(--text-shadow);
+  width: 100%;
+  text-align: center;
+}
+
+.list .item {
+  position: relative;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: var(--rounded-xs);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+.list .item.isUser .fill {
+  background: var(--isUser-fill);
+}
+.list .item.warning .fill {
+  background: var(--warning-fill);
+}
+.list .item.error .fill {
+  background: var(--error-fill);
+}
+.list .item .fill {
+  position: absolute;
+  inset: 0;
+  background: var(--row-fill);
+  opacity: 0.8;
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 150ms ease;
+}
+.list .item .content {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.list .item .classIcon {
+  width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.list .item .classIcon .classIconImg {
+  width: 100%;
+  height: 100%;
+}
+.list .item .name {
+  flex: 1;
+  color: var(--text-color);
+  font-size: 18px;
+  text-shadow: var(--text-shadow);
+  font-weight: bold;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.list .item .dps {
+  color: var(--dps);
+  font-size: var(--font);
+  text-shadow: var(--text-shadow);
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.battleTime.isVisible {
+  display: flex;
+}
+.battleTime .tick {
+  color: var(--text-color);
+  text-shadow: var(--text-shadow);
+  font-weight: 700;
+  font-size: 14px;
+}
+.battleTime .status {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+  flex: 0 0 auto;
+}
+.battleTime.state-fighting .status {
+  background: var(--dps);
+}
+.battleTime.state-grace .status {
+  background: var(--warning-fill);
+}
+.battleTime.state-ended .status {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.detailsPanel.open {
+  display: block;
+}
+.detailsPanel .detailsHeader {
+  display: flex;
+  align-items: center;
+  color: var(--title);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 12px;
+  padding-bottom: 6px;
+}
+.detailsPanel .detailsHeader .tooltip {
+  opacity: 0.6;
+  margin-left: 12px;
+  font-size: 12px;
+}
+.detailsPanel .detailsHeader .detailsHeaderControls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detailsPanel .detailsHeader .detailsSettingsMenuWrapper {
+  position: relative;
+}
+.detailsPanel .detailsHeader .detailsSettingsBtn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  transition: 0.2s;
+}
+.detailsPanel .detailsHeader .detailsSettingsBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.detailsPanel .detailsHeader .detailsSettingsMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 260px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 22, 40, 0.95);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+  display: none;
+  z-index: 5;
+}
+.detailsPanel .detailsHeader .detailsSettingsMenu.isOpen {
+  display: block;
+}
+.detailsPanel .detailsHeader .closeX {
+  cursor: pointer;
+  user-select: none;
+  font-size: 22px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: 0.2s;
+  border-radius: 4px;
+}
+.detailsPanel .detailsHeader .closeX:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.detailsPanel .detailsSettings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.detailsPanel .detailsSettings .detailsSettingsLabel {
+  font-size: 12px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.detailsPanel .detailsSettings .detailsSettingsControl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.detailsPanel .detailsSettings .detailsOpacityInput {
+  width: 190px;
+}
+.detailsPanel .detailsSettings .detailsOpacityValue {
+  font-size: 12px;
+  opacity: 0.75;
+  min-width: 44px;
+  text-align: right;
+}
+.detailsPanel .detailsStats {
+  display: grid;
+  gap: 6px 12px;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 6px 12px;
+}
+.detailsPanel .detailsStats .stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.detailsPanel .detailsSkills .cell {
+  min-width: 46px;
+  display: flex;
+  align-items: center;
+}
+.detailsPanel .detailsSkills .cell.name {
+  flex: 0 0 200px;
+  justify-content: flex-start;
+  white-space: nowrap;
+  color: var(--row-fill);
+}
+.detailsPanel .detailsSkills .cell.center {
+  justify-content: center;
+  flex: 0 0 56px;
+}
+.detailsPanel .detailsSkills .cell.dmg {
+  flex: 0 0 220px;
+  justify-content: center;
+}
+.detailsPanel .detailsSkills .cell.right {
+  justify-content: flex-end;
+}
+.detailsPanel .detailsSkills .skillHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.detailsPanel .detailsSkills .skillHeader .cell.name {
+  color: white;
+}
+.detailsPanel .detailsSkills .skills {
+  max-height: 562px;
+  padding: 0 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+.detailsPanel .detailsSkills .skills::-webkit-scrollbar {
+  width: 10px;
+}
+.detailsPanel .detailsSkills .skills::-webkit-scrollbar-track {
+  background: rgba(30, 30, 30);
+  border-radius: 999px;
+  margin-top: 8px;
+  margin-bottom: -8px;
+}
+.detailsPanel .detailsSkills .skills::-webkit-scrollbar-thumb {
+  background-color: rgb(77, 77, 77);
+  border-radius: 999px;
+}
+.detailsPanel .detailsSkills .skills::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.detailsPanel .detailsSkills .skills .skillRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.detailsPanel .detailsSkills .skills .skillRow:last-child {
+  border-bottom: none;
+}
+.detailsPanel .detailsSkills .skills .skillRow .cell.dmg {
+  position: relative;
+  overflow: hidden;
+  height: 20px;
+}
+.detailsPanel .detailsSkills .skills .skillRow .cell.dmg .dmgFill {
+  position: absolute;
+  inset: 0;
+  background: var(--isUser-fill);
+  border-radius: var(--rounded-xs);
+  transform-origin: left center;
+}
+.detailsPanel .detailsSkills .skills .skillRow .cell.dmg .dmgText {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  text-shadow: var(--text-shadow);
+  color: var(--dps);
+}
+
+.updateModal.isOpen {
+  display: flex;
+}
+.updateModal .updateModalCard {
+  width: 360px;
+  border-radius: 24px;
+  background: rgb(12, 22, 40);
+  padding: 24px;
+  font-weight: bold;
+  color: white;
+}
+.updateModal .updateModalCard .updateModalTitle {
+  font-size: 24px;
+}
+.updateModal .updateModalCard .updateModalText {
+  margin: 24px 0px;
+  white-space: pre-line;
+}
+.updateModal .updateModalCard .updateModalBtn {
+  border: none;
+  background: var(--error-fill);
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 8px;
+  width: 100%;
+  cursor: pointer;
+  color: white;
+  text-shadow: var(--text-shadow);
 }

@@ -9,6 +9,8 @@ const createDetailsUI = ({
 }) => {
   let openedRowId = null;
   let openSeq = 0;
+  let lastRow = null;
+  let lastDetails = null;
 
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
@@ -21,26 +23,31 @@ const createDetailsUI = ({
     const n = Number(v);
     return Number.isFinite(n) ? `${n.toFixed(1)}%` : "-";
   };
+  const i18n = window.i18n;
+  const labelText = (key, fallback) => i18n?.t?.(key, fallback) ?? fallback;
+  const formatTitle = (name) =>
+    i18n?.format?.("details.title", { name }, `${name} Details`) ?? `${name} Details`;
+
   const STATUS = [
-    { label: "累计伤害量", getValue: (d) => formatNum(d?.totalDmg) },
-    { label: "伤害量贡献度", getValue: (d) => pctText(d?.contributionPct) },
+    { key: "details.stats.totalDamage", fallback: "Total Damage", getValue: (d) => formatNum(d?.totalDmg) },
+    { key: "details.stats.contribution", fallback: "Contribution", getValue: (d) => pctText(d?.contributionPct) },
     // { label: "보스 막기비율", getValue: (d) => d?.parry ?? "-" },
     // { label: "보스 회피비율", getValue: (d) => d?.eva ?? "-" },
-    { label: "致命打击比例", getValue: (d) => pctText(d?.totalCritPct) },
-    { label: "完美比例", getValue: (d) => pctText(d?.totalPerfectPct) },
-    { label: "强击比例", getValue: (d) => pctText(d?.totalDoublePct) },
-    { label: "背击比例", getValue: (d) => pctText(d?.totalBackPct) },
-    { label: "BOSS格挡比例", getValue: (d) => pctText(d?.totalParryPct) },
-    { label: "战斗时间", getValue: (d) => d?.combatTime ?? "-" }
+    { key: "details.stats.critRate", fallback: "Crit Rate", getValue: (d) => pctText(d?.totalCritPct) },
+    { key: "details.stats.perfectRate", fallback: "Perfect Rate", getValue: (d) => pctText(d?.totalPerfectPct) },
+    { key: "details.stats.doubleRate", fallback: "Double Rate", getValue: (d) => pctText(d?.totalDoublePct) },
+    { key: "details.stats.backRate", fallback: "Back Attack Rate", getValue: (d) => pctText(d?.totalBackPct) },
+    { key: "details.stats.parryRate", fallback: "Parry Rate", getValue: (d) => pctText(d?.totalParryPct) },
+    { key: "details.stats.combatTime", fallback: "Combat Time", getValue: (d) => d?.combatTime ?? "-" },
   ];
 
-  const createStatView = (labelText) => {
+  const createStatView = (labelKey, fallbackLabel) => {
     const statEl = document.createElement("div");
     statEl.className = "stat";
 
     const labelEl = document.createElement("p");
     labelEl.className = "label";
-    labelEl.textContent = labelText;
+    labelEl.textContent = labelText(labelKey, fallbackLabel);
 
     const valueEl = document.createElement("p");
     valueEl.className = "value";
@@ -49,11 +56,23 @@ const createDetailsUI = ({
     statEl.appendChild(labelEl);
     statEl.appendChild(valueEl);
 
-    return { statEl, valueEl };
+    return { statEl, labelEl, valueEl, labelKey, fallbackLabel };
   };
 
-  const statSlots = STATUS.map((def) => createStatView(def.label));
+  const statSlots = STATUS.map((def) => createStatView(def.key, def.fallback));
   statSlots.forEach((value) => detailsStatsEl.appendChild(value.statEl));
+
+  const updateLabels = () => {
+    for (let i = 0; i < statSlots.length; i++) {
+      const slot = statSlots[i];
+      slot.labelEl.textContent = labelText(slot.labelKey, slot.fallbackLabel);
+    }
+    if (!detailsPanel.classList.contains("open")) {
+      detailsTitle.textContent = labelText("details.header", "Details");
+    } else if (currentRowName) {
+      detailsTitle.textContent = formatTitle(currentRowName);
+    }
+  };
 
   const renderStats = (details) => {
     for (let i = 0; i < STATUS.length; i++) {
@@ -176,7 +195,7 @@ const createDetailsUI = ({
       const doubleRate = pct(double, hits);
 
       view.nameEl.textContent = skill.name ?? "";
-      view.hitEl.textContent = `${hits}회`;
+      view.hitEl.textContent = `${hits}`;
       view.critEl.textContent = `${critRate}%`;
 
       view.parryEl.textContent = `${parryRate}%`;
@@ -189,10 +208,15 @@ const createDetailsUI = ({
     }
   };
 
+  let currentRowName = "";
+
   const render = (details, row) => {
-    detailsTitle.textContent = `${String(row.name)} 详细信息`;
+    currentRowName = String(row.name);
+    detailsTitle.textContent = formatTitle(currentRowName);
     renderStats(details);
     renderSkills(details);
+    lastRow = row;
+    lastDetails = details;
   };
 
   const isOpen = () => detailsPanel.classList.contains("open");
@@ -216,8 +240,10 @@ const createDetailsUI = ({
     }
 
     openedRowId = rowId;
+    lastRow = row;
 
-    detailsTitle.textContent = `${row.name} 详细信息`;
+    currentRowName = String(row.name);
+    detailsTitle.textContent = formatTitle(currentRowName);
     detailsPanel.classList.add("open");
 
     // 清除前值
@@ -244,9 +270,16 @@ const createDetailsUI = ({
     openSeq++;
 
     openedRowId = null;
+    lastRow = null;
+    lastDetails = null;
     detailsPanel.classList.remove("open");
   };
   detailsClose?.addEventListener("click", close);
 
-  return { open, close, isOpen, render };
+  const refresh = () => {
+    if (!detailsPanel.classList.contains("open") || !lastRow) return;
+    open(lastRow, { force: true, restartOnSwitch: false });
+  };
+
+  return { open, close, isOpen, render, updateLabels, refresh };
 };

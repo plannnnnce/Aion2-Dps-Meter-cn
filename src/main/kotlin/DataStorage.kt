@@ -1,6 +1,7 @@
 package com.tbread
 
 import com.tbread.entity.ParsedDamagePacket
+import com.tbread.logging.DebugLogWriter
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListSet
@@ -33,7 +34,7 @@ class DataStorage {
     }
 
     fun appendMobCode(code: Int, name: String) {
-        //稍后从文件或服务器加载
+        //이건나중에 파일이나 서버에서 불러오는걸로
         mobCodeData[code] = name
     }
 
@@ -51,10 +52,17 @@ class DataStorage {
             nickname.toByteArray(Charsets.UTF_8).size == 2 &&
             nickname.toByteArray(Charsets.UTF_8).size < nicknameStorage[uid]!!.toByteArray(Charsets.UTF_8).size
         ) {
-            logger.debug("取消昵称注册 {} -x> {}",nicknameStorage[uid],nickname)
+            logger.debug("Nickname registration skipped {} -x> {}", nicknameStorage[uid], nickname)
+            DebugLogWriter.debug(
+                logger,
+                "Nickname registration skipped {} -x> {}",
+                nicknameStorage[uid],
+                nickname
+            )
             return
         }
-        logger.debug("昵称注册 {} -> {}",nicknameStorage[uid],nickname)
+        logger.debug("Nickname registered {} -> {}", nicknameStorage[uid], nickname)
+        DebugLogWriter.debug(logger, "Nickname registered {} -> {}", nicknameStorage[uid], nickname)
         nicknameStorage[uid] = nickname
     }
 
@@ -63,7 +71,7 @@ class DataStorage {
         byActorStorage.clear()
         byTargetStorage.clear()
         summonStorage.clear()
-        logger.info("伤害包已初始化")
+        logger.info("Damage packets reset")
     }
 
     private fun flushNicknameStorage() {

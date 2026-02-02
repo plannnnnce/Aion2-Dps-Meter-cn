@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta
@@ -29,6 +29,14 @@
 
           <div class="headerBtns">
             <div class="headerBtn resetBtn"><i data-lucide="rotate-ccw"></i></div>
+            <div class="headerBtn settingsBtn"><i data-lucide="settings"></i></div>
+            <button
+              class="headerBtn metricToggleBtn"
+              type="button"
+              data-i18n="header.display.dps"
+              aria-label="Showing DPS">
+              DPS
+            </button>
             <div class="headerBtn collapseBtn">
               <i
                 class="collapseIcon"
@@ -41,12 +49,40 @@
           role="dialog"
           aria-modal="true">
           <div class="detailsHeader">
-            <div class="detailsTitle">상세</div>
-            <div class="tooltip">
-              持续伤害的攻击次数不包含在总计暴击、强击、完美、背击、格挡率中.
+            <div class="detailsTitle" data-i18n="details.header">Details</div>
+            <div class="tooltip" data-i18n="details.tooltip">
+              Damage over time hits are not included in total crit, double, perfect, back attack, or
+              parry ratios.
             </div>
-
-            <div class="closeX detailsClose">×</div>
+            <div class="detailsHeaderControls">
+              <div class="detailsSettingsMenuWrapper">
+                <button
+                  class="detailsSettingsBtn"
+                  type="button"
+                  aria-label="Open details settings"
+                  data-i18n-aria-label="details.settings.ariaLabel">
+                  <i data-lucide="settings"></i>
+                </button>
+                <div class="detailsSettingsMenu" role="menu">
+                  <div class="detailsSettings">
+                    <div class="detailsSettingsLabel" data-i18n="details.panelBackground">
+                      Panel background
+                    </div>
+                    <div class="detailsSettingsControl">
+                      <input
+                        class="detailsOpacityInput"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value="50" />
+                      <span class="detailsOpacityValue">50%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="closeX detailsClose">×</div>
+            </div>
           </div>
 
           <div class="detailsBody">
@@ -54,24 +90,108 @@
 
             <div class="detailsSkills">
               <div class="skillHeader">
-                <div class="cell name center">技能名</div>
-                <div class="cell center hit">命中数</div>
-                <div class="cell center crit">暴击</div>
-                <div class="cell center parry">格挡</div>
-                <div class="cell center perfect">完美</div>
-                <div class="cell center double">强击</div>
-                <div class="cell center back">背击</div>
-                <div class="cell dmg">累计伤害</div>
+                <div class="cell name" data-i18n="details.skills.skill">Skill</div>
+                <div class="cell center hit" data-i18n="details.skills.hits">Hits</div>
+                <div class="cell center crit" data-i18n="details.skills.crit">Crit</div>
+                <div class="cell center parry" data-i18n="details.skills.parry">Parry</div>
+                <div class="cell center perfect" data-i18n="details.skills.perfect">Perfect</div>
+                <div class="cell center double" data-i18n="details.skills.double">Double</div>
+                <div class="cell center back" data-i18n="details.skills.back">Back</div>
+                <div class="cell dmg" data-i18n="details.skills.totalDamage">Total Damage</div>
               </div>
 
               <div class="skills"></div>
             </div>
           </div>
         </div>
+        <div
+          class="settingsPanel"
+          role="dialog"
+          aria-modal="true">
+          <div class="settingsHeader">
+            <div class="settingsTitle" data-i18n="settings.title">Settings</div>
+            <div class="closeX settingsClose">×</div>
+          </div>
+          <div class="settingsBody">
+            <div class="settingsRow">
+              <div class="settingsInfo">
+                <div class="settingsLabel" data-i18n="settings.lockedPort">Detected device/port</div>
+                <div class="settingsValue">
+                  <span class="lockedIp">-</span>
+                  <span class="lockedPort">-</span>
+                </div>
+              </div>
+              <button class="settingsAction resetDetectBtn" data-i18n="settings.resetDetection">
+                Reset detection
+              </button>
+            </div>
+            <div class="settingsRow settingsRowInput">
+              <label
+                class="settingsLabel"
+                for="characterNameInput"
+                data-i18n="settings.characterName">
+                Character name
+              </label>
+              <input
+                id="characterNameInput"
+                class="characterNameInput"
+                placeholder="Enter your character name"
+                data-i18n-placeholder="settings.characterNamePlaceholder" />
+            </div>
+            <label class="settingsCheckbox">
+              <input
+                type="checkbox"
+                class="onlyMeCheckbox" />
+              <span data-i18n="settings.onlyMe">Only show my character</span>
+            </label>
+            <div class="settingsRow settingsRowSelect">
+              <div class="settingsInfo">
+                <div class="settingsLabel" data-i18n="settings.language.label">Language</div>
+              </div>
+              <select class="settingsSelect languageSelect">
+                <option value="en">English</option>
+                <option value="ko">한국어</option>
+                <option value="zh-Hant">繁體中文</option>
+                <option value="zh-Hans">简体中文</option>
+              </select>
+            </div>
+            <div class="settingsRow settingsRowSelect">
+              <div class="settingsInfo">
+                <div class="settingsLabel" data-i18n="settings.targetSelection.label">
+                  Target selection (experimental)
+                </div>
+              </div>
+              <select class="settingsSelect targetSelect">
+                <option value="mostDamage" data-i18n="settings.targetSelection.options.mostDamage">
+                  Most damage (current)
+                </option>
+                <option value="mostRecent" data-i18n="settings.targetSelection.options.mostRecent">
+                  Most recently damaged
+                </option>
+                <option value="allTargets" data-i18n="settings.targetSelection.options.allTargets">
+                  All targets combined
+                </option>
+              </select>
+              </div>
+            <div>
+              <label class="settingsCheckbox">
+                <input
+                        type="checkbox"
+                        class="debugLoggingCheckbox" />
+                <span data-i18n="settings.debugLogging">Enable debug logging</span>
+              </label>
+            </div>
+            <button class="discordButton" data-i18n="settings.discord">
+              💬 Get support on our Discord
+            </button>
+            <button class="quitButton" data-i18n="settings.quit">Quit</button>
+          </div>
+        </div>
         <div class="list"></div>
         <div class="battleTime">
           <div class="status"></div>
           <div class="tick"></div>
+          <div class="analysisStatus" data-i18n="battleTime.analysing">Analysing data...</div>
         </div>
       </div>
       <div
@@ -95,14 +215,12 @@
       class="updateModal"
       id="updateModal">
       <div class="updateModalCard">
-        <div class="updateModalTitle">新的更新</div>
+        <div class="updateModalTitle" data-i18n="update.title">New update available</div>
         <div
           class="updateModalText"
           id="updateModalText"></div>
         <div class="updateModalActions">
-          <button class="updateModalBtn primary">确认</button>
-          <button class="updateModalBtn secondary">取消</button>
-
+          <button class="updateModalBtn primary" data-i18n="update.ok">OK</button>
         </div>
       </div>
     </div>
@@ -110,13 +228,10 @@
     <script src="./js/meter.js"></script>
     <script src="./js/details.js"></script>
 
-    <!-- 添加 -->
+    <!-- 추가 -->
     <script src="./js/checkRelease.js"></script>
 
+    <script src="./js/i18n.js"></script>
     <script src="./js/core.js"></script>
-    <script>
-      lucide.createIcons();
-      dpsApp.start();
-    </script>
   </body>
 </html>

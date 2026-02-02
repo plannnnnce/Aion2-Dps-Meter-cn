@@ -3,6 +3,7 @@ package com.tbread.packet
 import com.tbread.DataStorage
 import com.tbread.entity.ParsedDamagePacket
 import com.tbread.entity.SpecialDamage
+import com.tbread.logging.DebugLogWriter
 import org.slf4j.LoggerFactory
 
 class StreamProcessor(private val dataStorage: DataStorage) {
@@ -15,17 +16,20 @@ class StreamProcessor(private val dataStorage: DataStorage) {
     fun onPacketReceived(packet: ByteArray) {
         val packetLengthInfo = readVarInt(packet)
         if (packet.size == packetLengthInfo.value) {
-            logger.trace("当前字节长度与预期长度相同 : {}", toHex(packet.copyOfRange(0, packet.size - 3)))
+            logger.trace(
+                "Current byte length matches expected length: {}",
+                toHex(packet.copyOfRange(0, packet.size - 3))
+            )
             parsePerfectPacket(packet.copyOfRange(0, packet.size - 3))
-            //不再需要切割的最终数据包组合
+            //더이상 자를필요가 없는 최종 패킷뭉치
             return
         }
         if (packet.size <= 3) return
-        // 单个魔法包到来时忽略
+        // 매직패킷 단일로 올때 무시
         if (packetLengthInfo.value > packet.size) {
-            logger.trace("当前字节长度比预期长度短 : {}", toHex(packet))
+            logger.trace("Current byte length is shorter than expected: {}", toHex(packet))
             parseBrokenLengthPacket(packet)
-            //长度头比实际包大 通常这里昵称聚集着?
+            //길이헤더가 실제패킷보다 김 보통 여기 닉네임이 몰려있는듯?
             return
         }
         if (packetLengthInfo.value <= 3) {
@@ -36,16 +40,19 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         try {
             if (packet.copyOfRange(0, packetLengthInfo.value - 3).size != 3) {
                 if (packet.copyOfRange(0, packetLengthInfo.value - 3).isNotEmpty()) {
-                    logger.trace("成功分离数据包 : {}", toHex(packet.copyOfRange(0, packetLengthInfo.value - 3)))
+                    logger.trace(
+                        "Packet split succeeded: {}",
+                        toHex(packet.copyOfRange(0, packetLengthInfo.value - 3))
+                    )
                     parsePerfectPacket(packet.copyOfRange(0, packetLengthInfo.value - 3))
-                    //缺少魔法包的数据包组合
+                    //매직패킷이 빠져있는 패킷뭉치
                 }
             }
 
             onPacketReceived(packet.copyOfRange(packetLengthInfo.value - 3, packet.size))
-            //剩余包重新处理
+            //남은패킷 재처리
         } catch (e: Exception) {
-            logger.error("包处理中异常发生 {}", toHex(packet), e)
+            logger.error("Exception while consuming packet {}", toHex(packet), e)
             return
         }
 
@@ -53,7 +60,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
 
     private fun parseBrokenLengthPacket(packet: ByteArray, flag: Boolean = true) {
         if (packet[2] != 0xff.toByte() || packet[3] != 0xff.toByte()) {
-            logger.trace("b剩余包: {}", toHex(packet))
+            logger.trace("Remaining packet buffer: {}", toHex(packet))
             val target = dataStorage.getCurrentTarget()
             var processed = false
             if (target != 0) {
@@ -91,7 +98,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
                 }
             }
             if (flag && !processed) {
-                logger.debug("剩余包 {}",toHex(packet))
+                logger.debug("Remaining packet {}", toHex(packet))
                 parseNicknameFromBrokenLengthPacket(packet)
             }
             return
@@ -118,34 +125,46 @@ class StreamProcessor(private val dataStorage: DataStorage) {
                 val possibleNameLength = packet[innerOffset + 5].toInt() and 0xff
                 if (innerOffset + 6 + possibleNameLength <= packet.size) {
                     val possibleNameBytes = packet.copyOfRange(innerOffset + 6, innerOffset + 6 + possibleNameLength)
-                    if (hasPossibilityNickname(String(possibleNameBytes, Charsets.UTF_8))) {
-                        logger.debug("1号模式中发现的预计昵称 : {}", String(possibleNameBytes, Charsets.UTF_8))
-                        dataStorage.appendNickname(info.value, String(possibleNameBytes, Charsets.UTF_8))
-                        originOffset++
+                    val possibleName = String(possibleNameBytes, Charsets.UTF_8)
+                    val sanitizedName = sanitizeNickname(possibleName)
+                    if (sanitizedName != null) {
+                        logger.info(
+                            "Potential nickname found in pattern 1: {} (hex={})",
+                            sanitizedName,
+                            toHex(possibleNameBytes)
+                        )
+                        DebugLogWriter.info(
+                            logger,
+                            "Potential nickname found in pattern 1: {} (hex={})",
+                            sanitizedName,
+                            toHex(possibleNameBytes)
+                        )
+                        dataStorage.appendNickname(info.value, sanitizedName)
                     }
                 }
             }
-            if (packet.size > innerOffset + 3 && packet[innerOffset + 1] == 0x00.toByte()) {
-                val possibleNameLength = packet[innerOffset + 2].toInt() and 0xff
-                if (packet.size >= innerOffset + possibleNameLength + 3 && possibleNameLength.toInt() != 0) {
-                    val possibleNameBytes = packet.copyOfRange(innerOffset + 3, innerOffset + possibleNameLength + 3)
-                    if (hasPossibilityNickname(String(possibleNameBytes, Charsets.UTF_8))) {
-                        logger.debug("2号模式中发现的预计昵称 : {}", String(possibleNameBytes, Charsets.UTF_8))
-                        dataStorage.appendNickname(info.value, String(possibleNameBytes, Charsets.UTF_8))
-                        originOffset++
-                    }
-                }
-            }
+            // Pattern 2 disabled temporarily due to unreliable results.
             if (packet.size > innerOffset + 5) {
                 if (packet[innerOffset + 3] == 0x00.toByte() && packet[innerOffset + 4] == 0x07.toByte()) {
                     val possibleNameLength = packet[innerOffset + 5].toInt() and 0xff
                     if (packet.size > innerOffset + possibleNameLength + 6) {
                         val possibleNameBytes =
                             packet.copyOfRange(innerOffset + 6, innerOffset + possibleNameLength + 6)
-                        if (hasPossibilityNickname(String(possibleNameBytes, Charsets.UTF_8))) {
-                            logger.debug("新模式中发现的预计昵称 : {}", String(possibleNameBytes, Charsets.UTF_8))
-                            dataStorage.appendNickname(info.value, String(possibleNameBytes, Charsets.UTF_8))
-                            originOffset++
+                        val possibleName = String(possibleNameBytes, Charsets.UTF_8)
+                        val sanitizedName = sanitizeNickname(possibleName)
+                        if (sanitizedName != null) {
+                            logger.info(
+                                "Potential nickname found in new pattern: {} (hex={})",
+                                sanitizedName,
+                                toHex(possibleNameBytes)
+                            )
+                            DebugLogWriter.info(
+                                logger,
+                                "Potential nickname found in new pattern: {} (hex={})",
+                                sanitizedName,
+                                toHex(possibleNameBytes)
+                            )
+                            dataStorage.appendNickname(info.value, sanitizedName)
                         }
                     }
                 }
@@ -154,14 +173,41 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         }
     }
 
-    private fun hasPossibilityNickname(nickname: String): Boolean {
-        if (nickname.isEmpty()) return false
-        val regex = Regex("^[가-힣a-zA-Z0-9]+$")
-        if (!regex.matches(nickname)) return false
-        val onlyNumbers = Regex("^[0-9]+$")
-        if (onlyNumbers.matches(nickname)) return false
-        val oneAlphabet = Regex("^[A-Za-z]$")
-        return !oneAlphabet.matches(nickname)
+    private fun sanitizeNickname(nickname: String): String? {
+        val sanitizedNickname = nickname.substringBefore('\u0000').trim()
+        if (sanitizedNickname.isEmpty()) return null
+        val nicknameBuilder = StringBuilder()
+        var onlyNumbers = true
+        var hasHan = false
+        for (ch in sanitizedNickname) {
+            if (!Character.isLetterOrDigit(ch)) {
+                if (nicknameBuilder.isEmpty()) return null
+                break
+            }
+            if (ch == '\uFFFD') {
+                if (nicknameBuilder.isEmpty()) return null
+                break
+            }
+            if (Character.isISOControl(ch)) {
+                if (nicknameBuilder.isEmpty()) return null
+                break
+            }
+            nicknameBuilder.append(ch)
+            if (Character.isLetter(ch)) onlyNumbers = false
+            if (Character.UnicodeScript.of(ch.code) == Character.UnicodeScript.HAN) {
+                hasHan = true
+            }
+        }
+        val trimmedNickname = nicknameBuilder.toString()
+        if (trimmedNickname.isEmpty()) return null
+        if (trimmedNickname.length < 3 && !hasHan) return null
+        if (onlyNumbers) return null
+        if (trimmedNickname.length == 1 &&
+            (trimmedNickname[0] in 'A'..'Z' || trimmedNickname[0] in 'a'..'z')
+        ) {
+            return null
+        }
+        return trimmedNickname
     }
 
     private fun parsePerfectPacket(packet: ByteArray) {
@@ -218,9 +264,25 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         if (damageInfo.length < 0) return
         pdp.setDamage(damageInfo)
 
-        logger.debug("{}",toHex(packet))
-        logger.debug("DOT伤害 攻击者 {},被击者 {},技能 {},伤害 {}",pdp.getActorId(),pdp.getTargetId(),pdp.getSkillCode1(),pdp.getDamage())
+        logger.debug("{}", toHex(packet))
+        DebugLogWriter.debug(logger, "{}", toHex(packet))
+        logger.debug(
+            "Dot damage actor {}, target {}, skill {}, damage {}",
+            pdp.getActorId(),
+            pdp.getTargetId(),
+            pdp.getSkillCode1(),
+            pdp.getDamage()
+        )
+        DebugLogWriter.debug(
+            logger,
+            "Dot damage actor {}, target {}, skill {}, damage {}",
+            pdp.getActorId(),
+            pdp.getTargetId(),
+            pdp.getSkillCode1(),
+            pdp.getDamage()
+        )
         logger.debug("----------------------------------")
+        DebugLogWriter.debug(logger, "----------------------------------")
         if (pdp.getActorId() != pdp.getTargetId()) {
             dataStorage.appendDamage(pdp)
         }
@@ -302,6 +364,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
                 if (mobInfo2.length < 0) return false
                 if (mobInfo.value == mobInfo2.value) {
                     logger.debug("mid: {}, code: {}", summonInfo.value, mobInfo.value)
+                    DebugLogWriter.debug(logger, "mid: {}, code: {}", summonInfo.value, mobInfo.value)
                     dataStorage.appendMob(summonInfo.value, mobInfo.value)
                 }
             }
@@ -319,7 +382,8 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         if (offset + 2 > packet.size) return false
         val realActorId = parseUInt16le(packet, offset)
 
-        logger.debug("召唤怪映射成功 {},{}", realActorId, summonInfo.value)
+        logger.debug("Summon mob mapping succeeded {},{}", realActorId, summonInfo.value)
+        DebugLogWriter.debug(logger, "Summon mob mapping succeeded {},{}", realActorId, summonInfo.value)
         dataStorage.appendSummon(realActorId, summonInfo.value)
         return true
     }
@@ -329,7 +393,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
     }
 
     private fun parseUInt32le(packet: ByteArray, offset: Int = 0): Int {
-        require(offset + 4 <= packet.size) { "包长度比所需长度短" }
+        require(offset + 4 <= packet.size) { "Packet length is shorter than required" }
         return ((packet[offset].toInt() and 0xFF)) or
                 ((packet[offset + 1].toInt() and 0xFF) shl 8) or
                 ((packet[offset + 2].toInt() and 0xFF) shl 16) or
@@ -342,7 +406,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         if (packetLengthInfo.length < 0) return false
         offset += packetLengthInfo.length
 //        if (packetLengthInfo.value < 32) return
-        //需要更多验证 大部分为0x20, 0x23左右
+        //좀더 검증필요 대부분이 0x20,0x23 정도였음
 
         if (packet[offset] != 0x04.toByte()) return false
         if (packet[offset + 1] != 0x8d.toByte()) return false
@@ -362,8 +426,11 @@ class StreamProcessor(private val dataStorage: DataStorage) {
 
         val np = packet.copyOfRange(offset + 1, offset + nicknameLength + 1)
 
-        logger.debug("0号模式中发现的确切昵称 {}", String(np, Charsets.UTF_8))
-        dataStorage.appendNickname(playerInfo.value, String(np, Charsets.UTF_8))
+        val possibleName = String(np, Charsets.UTF_8)
+        val sanitizedName = sanitizeNickname(possibleName) ?: return false
+        logger.debug("Confirmed nickname found in pattern 0 {}", sanitizedName)
+        DebugLogWriter.debug(logger, "Confirmed nickname found in pattern 0 {}", sanitizedName)
+        dataStorage.appendNickname(playerInfo.value, sanitizedName)
 
         return true
     }
@@ -385,19 +452,19 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         val targetInfo = readVarInt(packet, offset)
         if (targetInfo.length < 0) return false
         pdp.setTargetId(targetInfo)
-        offset += targetInfo.length //目标
+        offset += targetInfo.length //타겟
         if (offset >= packet.size) return false
 
         val switchInfo = readVarInt(packet, offset)
         if (switchInfo.length < 0) return false
         pdp.setSwitchVariable(switchInfo)
-        offset += switchInfo.length //跳转用
+        offset += switchInfo.length //점프용
         if (offset >= packet.size) return false
 
         val flagInfo = readVarInt(packet, offset)
         if (flagInfo.length < 0) return false
         pdp.setFlag(flagInfo)
-        offset += flagInfo.length //标志
+        offset += flagInfo.length //플래그
         if (offset >= packet.size) return false
 
         val actorInfo = readVarInt(packet, offset)
@@ -469,14 +536,24 @@ class StreamProcessor(private val dataStorage: DataStorage) {
 //        }
 
         logger.trace("{}", toHex(packet))
-        logger.trace("类型包 {}", toHex(byteArrayOf(damageType)))
+        logger.trace("Type packet {}", toHex(byteArrayOf(damageType)))
         logger.trace(
-            "类型包比特 {}", String.format("%8s", (damageType.toInt() and 0xFF).toString(2))
-                .replace(' ', '0')
+            "Type packet bits {}",
+            String.format("%8s", (damageType.toInt() and 0xFF).toString(2)).replace(' ', '0')
         )
-        logger.trace("可变包: {}", toHex(packet.copyOfRange(start, start + tempV)))
+        logger.trace("Varint packet: {}", toHex(packet.copyOfRange(start, start + tempV)))
         logger.debug(
-            "被击者: {},攻击者: {},技能: {},类型: {},伤害: {},伤害标志: {}",
+            "Target: {}, attacker: {}, skill: {}, type: {}, damage: {}, damage flag: {}",
+            pdp.getTargetId(),
+            pdp.getActorId(),
+            pdp.getSkillCode1(),
+            pdp.getType(),
+            pdp.getDamage(),
+            pdp.getSpecials()
+        )
+        DebugLogWriter.debug(
+            logger,
+            "Target: {}, attacker: {}, skill: {}, type: {}, damage: {}, damage flag: {}",
             pdp.getTargetId(),
             pdp.getActorId(),
             pdp.getSkillCode1(),
@@ -486,8 +563,8 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         )
 
         if (pdp.getActorId() != pdp.getTargetId()) {
-            //后续如添加HPS则修改
-            //如果之后出现对自己造成伤害的BOSS机制的话..
+            //추후 hps 를 넣는다면 수정하기
+            //혹시 나중에 자기자신에게 데미지주는 보스 기믹이 나오면..
             dataStorage.appendDamage(pdp)
         }
         return true
@@ -495,19 +572,19 @@ class StreamProcessor(private val dataStorage: DataStorage) {
     }
 
     private fun toHex(bytes: ByteArray): String {
-        //输出测试用
+        //출력테스트용
         return bytes.joinToString(" ") { "%02X".format(it) }
     }
 
     private fun readVarInt(bytes: ByteArray, offset: Int = 0): VarIntOutput {
-        //谷歌Protocol Buffers库中已有？ 如有效率差异则以后更改？
+        //구글 Protocol Buffers 라이브러리에 이미 있나? 코드 효율성에 차이있어보이면 나중에 바꾸는게 나을듯?
         var value = 0
         var shift = 0
         var count = 0
 
         while (true) {
             if (offset + count >= bytes.size) {
-                logger.error("数组范围超出, 包 {} 偏移 {} count {}", toHex(bytes), offset, count)
+                logger.error("Array out of bounds, packet {} offset {} count {}", toHex(bytes), offset, count)
                 return VarIntOutput(-1, -1)
             }
 
@@ -523,7 +600,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
             shift += 7
             if (shift >= 32) {
                 logger.trace(
-                    "可变整数溢出, 包 {} 偏移 {} shift {}",
+                    "Varint overflow, packet {} offset {} shift {}",
                     toHex(bytes.copyOfRange(offset, offset + 4)),
                     offset,
                     shift
