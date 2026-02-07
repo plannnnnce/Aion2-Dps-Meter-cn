@@ -1,6 +1,8 @@
 package com.tbread.packet
 
 import com.tbread.DataStorage
+import com.tbread.DpsCalculator.Companion.SKILL_MAP
+import com.tbread.DpsCalculator.Companion.SKILL_NAME_MAP
 import com.tbread.entity.ParsedDamagePacket
 import com.tbread.entity.SpecialDamage
 import com.tbread.logging.DebugLogWriter
@@ -21,15 +23,15 @@ class StreamProcessor(private val dataStorage: DataStorage) {
                 toHex(packet.copyOfRange(0, packet.size - 3))
             )
             parsePerfectPacket(packet.copyOfRange(0, packet.size - 3))
-            //더이상 자를필요가 없는 최종 패킷뭉치
+            //无需进一步分割的最终数据包组合
             return
         }
         if (packet.size <= 3) return
-        // 매직패킷 단일로 올때 무시
+        // 忽略单个魔法包
         if (packetLengthInfo.value > packet.size) {
             logger.trace("Current byte length is shorter than expected: {}", toHex(packet))
             parseBrokenLengthPacket(packet)
-            //길이헤더가 실제패킷보다 김 보통 여기 닉네임이 몰려있는듯?
+            //长度头部比实际包大，通常昵称信息聚集在此处？
             return
         }
         if (packetLengthInfo.value <= 3) {
@@ -45,12 +47,12 @@ class StreamProcessor(private val dataStorage: DataStorage) {
                         toHex(packet.copyOfRange(0, packetLengthInfo.value - 3))
                     )
                     parsePerfectPacket(packet.copyOfRange(0, packetLengthInfo.value - 3))
-                    //매직패킷이 빠져있는 패킷뭉치
+                    //缺少魔法包的数据包组合
                 }
             }
 
             onPacketReceived(packet.copyOfRange(packetLengthInfo.value - 3, packet.size))
-            //남은패킷 재처리
+            //剩余包重新处理
         } catch (e: Exception) {
             logger.error("Exception while consuming packet {}", toHex(packet), e)
             return
@@ -406,7 +408,7 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         if (packetLengthInfo.length < 0) return false
         offset += packetLengthInfo.length
 //        if (packetLengthInfo.value < 32) return
-        //좀더 검증필요 대부분이 0x20,0x23 정도였음
+        //需要更多验证，大部分为0x20,0x23左右
 
         if (packet[offset] != 0x04.toByte()) return false
         if (packet[offset + 1] != 0x8d.toByte()) return false
@@ -452,19 +454,19 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         val targetInfo = readVarInt(packet, offset)
         if (targetInfo.length < 0) return false
         pdp.setTargetId(targetInfo)
-        offset += targetInfo.length //타겟
+        offset += targetInfo.length //目标
         if (offset >= packet.size) return false
 
         val switchInfo = readVarInt(packet, offset)
         if (switchInfo.length < 0) return false
         pdp.setSwitchVariable(switchInfo)
-        offset += switchInfo.length //점프용
+        offset += switchInfo.length //跳转用
         if (offset >= packet.size) return false
 
         val flagInfo = readVarInt(packet, offset)
         if (flagInfo.length < 0) return false
         pdp.setFlag(flagInfo)
-        offset += flagInfo.length //플래그
+        offset += flagInfo.length //标志
         if (offset >= packet.size) return false
 
         val actorInfo = readVarInt(packet, offset)
@@ -542,11 +544,13 @@ class StreamProcessor(private val dataStorage: DataStorage) {
             String.format("%8s", (damageType.toInt() and 0xFF).toString(2)).replace(' ', '0')
         )
         logger.trace("Varint packet: {}", toHex(packet.copyOfRange(start, start + tempV)))
-        logger.debug(
-            "Target: {}, attacker: {}, skill: {}, type: {}, damage: {}, damage flag: {}",
+        logger.info(
+            "Target: {}, attacker: [{}][{}], skill: [{}][{}], type: {}, damage: {}, damage flag: {}",
             pdp.getTargetId(),
             pdp.getActorId(),
+            dataStorage.getNickname().get(pdp.getActorId()),
             pdp.getSkillCode1(),
+            SKILL_NAME_MAP[pdp.getSkillCode1()],
             pdp.getType(),
             pdp.getDamage(),
             pdp.getSpecials()
@@ -563,8 +567,8 @@ class StreamProcessor(private val dataStorage: DataStorage) {
         )
 
         if (pdp.getActorId() != pdp.getTargetId()) {
-            //추후 hps 를 넣는다면 수정하기
-            //혹시 나중에 자기자신에게 데미지주는 보스 기믹이 나오면..
+            //后续如添加HPS则修改
+            //如果之后出现对自己造成伤害的BOSS机制的话..
             dataStorage.appendDamage(pdp)
         }
         return true
@@ -572,12 +576,12 @@ class StreamProcessor(private val dataStorage: DataStorage) {
     }
 
     private fun toHex(bytes: ByteArray): String {
-        //출력테스트용
+        //输出测试用
         return bytes.joinToString(" ") { "%02X".format(it) }
     }
 
     private fun readVarInt(bytes: ByteArray, offset: Int = 0): VarIntOutput {
-        //구글 Protocol Buffers 라이브러리에 이미 있나? 코드 효율성에 차이있어보이면 나중에 바꾸는게 나을듯?
+        //谷歌Protocol Buffers库中已有？如有效率差异则以后更改？
         var value = 0
         var shift = 0
         var count = 0

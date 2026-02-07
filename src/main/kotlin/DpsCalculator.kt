@@ -6,7 +6,9 @@ import com.tbread.entity.ParsedDamagePacket
 import com.tbread.entity.PersonalData
 import com.tbread.entity.TargetInfo
 import com.tbread.logging.DebugLogWriter
+import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.io.File
 import kotlin.math.roundToInt
 import java.util.UUID
 
@@ -37,6 +39,28 @@ class DpsCalculator(private val dataStorage: DataStorage) {
     )
 
     companion object {
+
+
+        fun loadSkillMap(): Map<Int, String> {
+            val jsonFile = File("src/main/resources/i18n/skills/zh-Hant.json")
+            val jsonString = if (jsonFile.exists()) {
+                jsonFile.readText()
+            } else {
+                // 如果文件不存在，尝试从资源中加载
+                DpsCalculator::class.java.classLoader.getResource("i18n/skills/zh-Hant.json")?.readText()
+                    ?: "{}"
+            }
+
+            val skillNameMap = try {
+                Json.decodeFromString<Map<String, String>>(jsonString)
+            } catch (e: Exception) {
+                emptyMap()
+            }
+
+            // 将String键转换为Int键
+            return skillNameMap.mapKeys { entry -> entry.key.toInt() }
+        }
+
         val POSSIBLE_OFFSETS: IntArray =
             intArrayOf(
                 0, 10, 20, 30, 40, 50,
@@ -865,6 +889,10 @@ class DpsCalculator(private val dataStorage: DataStorage) {
                 13370000,
                 13700000
             ).apply { sort() }
+
+
+        val SKILL_NAME_MAP = loadSkillMap()
+
     }
 
     private val targetInfoMap = hashMapOf<Int, TargetInfo>()

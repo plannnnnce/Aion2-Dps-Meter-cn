@@ -61,7 +61,7 @@ class DataStorage {
             )
             return
         }
-        logger.debug("Nickname registered {} -> {}", nicknameStorage[uid], nickname)
+        logger.info("Nickname registered id {} -> old: {} -> new: {}", uid, nicknameStorage[uid], nickname)
         DebugLogWriter.debug(logger, "Nickname registered {} -> {}", nicknameStorage[uid], nickname)
         nicknameStorage[uid] = nickname
     }
